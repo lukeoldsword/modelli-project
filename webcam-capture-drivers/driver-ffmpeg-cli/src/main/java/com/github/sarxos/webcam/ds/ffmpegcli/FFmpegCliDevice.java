@@ -90,28 +90,25 @@ public class FFmpegCliDevice implements WebcamDevice, WebcamDevice.BufferAccess 
 	}
 	
 	private final void CiclomaticComlexityReduced(int v){
-
-	try {
-		// read until EOI
-		boolean founded = false;
-		do {
-			baos.write(v = dis.readUnsignedByte());
-			if (v == 0xFF) {
+		try {
+			// read until EOI
+			boolean founded = false;
+			do {
 				baos.write(v = dis.readUnsignedByte());
-				if (v == 0xD9) {
-					founded = true; // EOI found
+				if (v == 0xFF) {
+					baos.write(v = dis.readUnsignedByte());
+					if (v == 0xD9) {
+						founded = true; // EOI found
+					}
 				}
-			}
-		} while (!founded);
-
-	} catch (IOException e) {
-		throw new RuntimeException(e);
-	}
-		
+			} while (!founded);
+	
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}		
 	}
 
 	private synchronized byte[] readBytes() {
-
 		if (!open.get()) {
 			return null;
 		}
@@ -119,9 +116,7 @@ public class FFmpegCliDevice implements WebcamDevice, WebcamDevice.BufferAccess 
 		baos.reset();
 
 		int b, c;
-		try {
-
-			// search for SOI
+		try {// search for SOI
 			boolean founded = false;
 			do {
 				if (((b = dis.readUnsignedByte()) == 0xFF) && ((c = dis.readUnsignedByte()) == 0xD8)) {
@@ -134,13 +129,11 @@ public class FFmpegCliDevice implements WebcamDevice, WebcamDevice.BufferAccess 
 			// read until EOI
 			CiclomaticComlexityReduced(c);
 			
-
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 
 		return baos.toByteArray();
-
 	}
 
 	@Override
