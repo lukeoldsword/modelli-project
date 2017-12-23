@@ -101,26 +101,26 @@ public class FFmpegCliDevice implements WebcamDevice, WebcamDevice.BufferAccess 
 		try {
 
 			// search for SOI
-			while (true) {
-				if ((b = dis.readUnsignedByte()) == 0xFF) {
-					if ((c = dis.readUnsignedByte()) == 0xD8) {
+			boolean founded = false;
+			do {
+				if (((b = dis.readUnsignedByte()) == 0xFF) && ((c = dis.readUnsignedByte()) == 0xD8)) {
 						baos.write(b);
 						baos.write(c);
-						break; // SOI found
-					}
+						founded = true; //SOI found
 				}
-			}
+			} while (!founded);
 
 			// read until EOI
+			founded = false;
 			do {
 				baos.write(c = dis.readUnsignedByte());
 				if (c == 0xFF) {
 					baos.write(c = dis.readUnsignedByte());
 					if (c == 0xD9) {
-						break; // EOI found
+						founded = true; // EOI found
 					}
 				}
-			} while (true);
+			} while (!founded);
 
 		} catch (IOException e) {
 			throw new RuntimeException(e);
