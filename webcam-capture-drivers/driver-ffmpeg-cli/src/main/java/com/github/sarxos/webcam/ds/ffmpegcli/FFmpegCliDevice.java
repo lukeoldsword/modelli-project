@@ -88,52 +88,48 @@ public class FFmpegCliDevice implements WebcamDevice, WebcamDevice.BufferAccess 
 	public void setResolution(Dimension resolution) {
 		this.resolution = resolution;
 	}
-	
-	private final void CiclomaticComlexityReduced(int v){
-		try {
-			// read until EOI
-			boolean founded = false;
-			do {
-				baos.write(v = dis.readUnsignedByte());
-				if (v == 0xFF) {
-					baos.write(v = dis.readUnsignedByte());
-					if (v == 0xD9) {
-						founded = true; // EOI found
-					}
-				}
-			} while (!founded);
-	
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}		
-	}
 
-	private synchronized byte[] readBytes() {
+	private  byte[] readBytes() {
+		
 		if (!open.get()) {
 			return null;
 		}
+synchronized (FFmpegCliDevice.class) {
+	
 
 		baos.reset();
 
 		int b, c;
-		try {// search for SOI
-			boolean founded = false;
-			do {
-				if (((b = dis.readUnsignedByte()) == 0xFF) && ((c = dis.readUnsignedByte()) == 0xD8)) {
+		try {
+
+			// search for SOI
+			while (true) {
+				if ((b = dis.readUnsignedByte()) == 0xFF) {
+					if ((c = dis.readUnsignedByte()) == 0xD8) {
 						baos.write(b);
 						baos.write(c);
-						founded = true; //SOI found
+						break; // SOI found
+					}
 				}
-			} while (!founded);
+			}
 
 			// read until EOI
-			CiclomaticComlexityReduced(c);
-			
+			do {
+				baos.write(c = dis.readUnsignedByte());
+				if (c == 0xFF) {
+					baos.write(c = dis.readUnsignedByte());
+					if (c == 0xD9) {
+						break; // EOI found
+					}
+				}
+			} while (true);
+
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 
 		return baos.toByteArray();
+		}
 	}
 
 	@Override

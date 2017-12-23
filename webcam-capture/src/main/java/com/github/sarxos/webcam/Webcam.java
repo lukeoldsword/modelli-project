@@ -330,7 +330,7 @@ public class Webcam {
 
 			// setup non-blocking configuration
 
-			if (asynchronous = async) {
+			if (asynchronous == async) {
 				if (updater == null) {
 					updater = new WebcamUpdater(this, delayCalculator);
 				}
@@ -585,12 +585,7 @@ public class Webcam {
 			throw new IllegalStateException("Cannot change resolution when webcam is open, please close it first");
 		}
 
-		// check if new resolution is the same as current one
-
-		Dimension current = getViewSize();
-		if (current != null && current.width == size.width && current.height == size.height) {
-			return;
-		}
+	
 
 		// check if new resolution is valid
 
@@ -600,6 +595,14 @@ public class Webcam {
 		assert predefined != null;
 		assert custom != null;
 
+		isValidAndSet(predefined, custom, size);
+
+		LOG.debug("Setting new resolution {}x{}", size.width, size.height);
+
+		device.setResolution(size);
+	}
+	
+	private static void isValidAndSet(Dimension[] predefined,Dimension[] custom, Dimension size){
 		boolean ok = false;
 		for (Dimension d : predefined) {
 			if (d.width == size.width && d.height == size.height) {
@@ -628,10 +631,6 @@ public class Webcam {
 			}
 			throw new IllegalArgumentException(sb.toString());
 		}
-
-		LOG.debug("Setting new resolution {}x{}", size.width, size.height);
-
-		device.setResolution(size);
 	}
 
 	/**
@@ -1209,11 +1208,13 @@ public class Webcam {
 	 *
 	 * @return Discovery service
 	 */
-	public static synchronized WebcamDiscoveryService getDiscoveryService() {
+	public static  WebcamDiscoveryService getDiscoveryService() {
+		synchronized (Webcam.class) {
+			
 		if (discovery == null) {
 			discovery = new WebcamDiscoveryService(getDriver());
 		}
-		return discovery;
+		return discovery;}
 	}
 
 	/**
