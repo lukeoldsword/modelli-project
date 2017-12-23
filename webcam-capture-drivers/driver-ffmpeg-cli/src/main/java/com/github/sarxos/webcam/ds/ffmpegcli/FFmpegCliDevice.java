@@ -90,8 +90,7 @@ public class FFmpegCliDevice implements WebcamDevice, WebcamDevice.BufferAccess 
 	}
 	
 	private final void CiclomaticComlexityReduced(int v){
-		try {
-			// read until EOI
+		try {// read until EOI
 			boolean founded = false;
 			do {
 				baos.write(v = dis.readUnsignedByte());
