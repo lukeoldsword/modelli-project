@@ -88,6 +88,27 @@ public class FFmpegCliDevice implements WebcamDevice, WebcamDevice.BufferAccess 
 	public void setResolution(Dimension resolution) {
 		this.resolution = resolution;
 	}
+	
+	private final void CiclomaticComlexityReduced(int v){
+
+	try {
+		// read until EOI
+		boolean founded = false;
+		do {
+			baos.write(v = dis.readUnsignedByte());
+			if (v == 0xFF) {
+				baos.write(v = dis.readUnsignedByte());
+				if (v == 0xD9) {
+					founded = true; // EOI found
+				}
+			}
+		} while (!founded);
+
+	} catch (IOException e) {
+		throw new RuntimeException(e);
+	}
+		
+	}
 
 	private synchronized byte[] readBytes() {
 
@@ -111,16 +132,8 @@ public class FFmpegCliDevice implements WebcamDevice, WebcamDevice.BufferAccess 
 			} while (!founded);
 
 			// read until EOI
-			founded = false;
-			do {
-				baos.write(c = dis.readUnsignedByte());
-				if (c == 0xFF) {
-					baos.write(c = dis.readUnsignedByte());
-					if (c == 0xD9) {
-						founded = true; // EOI found
-					}
-				}
-			} while (!founded);
+			CiclomaticComlexityReduced(c);
+			
 
 		} catch (IOException e) {
 			throw new RuntimeException(e);
