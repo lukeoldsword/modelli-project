@@ -57,26 +57,18 @@ public class FFmpegCliDriver implements WebcamDriver, WebcamDiscoverySupport {
 
 			try {
 				process = RT.exec(cmd);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
 
-			os = process.getOutputStream();
-			is1 = process.getInputStream();
-			is2 = process.getErrorStream();
+				os = process.getOutputStream();
+				is1 = process.getInputStream();
+				is2 = process.getErrorStream();
 
-			try {
 				os.close();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
 
-			br1 = new BufferedReader(new InputStreamReader(is1));
-			br2 = new BufferedReader(new InputStreamReader(is2));
+				br1 = new BufferedReader(new InputStreamReader(is1));
+				br2 = new BufferedReader(new InputStreamReader(is2));
+	
+				boolean read = false;
 
-			boolean read = false;
-
-			try {
 				while ((line = br2.readLine()) != null) {
 					if (line.startsWith(STARTER) && line.indexOf(MARKER) != -1) {
 						LOG.debug("Command stderr line: {}", line);
