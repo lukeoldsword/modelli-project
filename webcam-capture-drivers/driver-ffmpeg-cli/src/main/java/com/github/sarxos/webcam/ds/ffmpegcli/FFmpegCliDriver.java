@@ -27,36 +27,41 @@ public class FFmpegCliDriver implements WebcamDriver, WebcamDiscoverySupport {
 	private static final String MARKER = "mjpeg";
 	private static final String STARTER = "[video4linux";
 
-	private final void CiclomaticComlexityReduced(File[] vfiles, String[] cmd, List<WebcamDevice> devices, OutputStream os, InputStream is1, InputStream is2, Process process , String line , BufferedReader br1, BufferedReader br2){
-		process = RT.exec(cmd);
-
-		os = process.getOutputStream();
-		is1 = process.getInputStream();
-		is2 = process.getErrorStream();
-
-		os.close();
-
-		br1 = new BufferedReader(new InputStreamReader(is1));
-		br2 = new BufferedReader(new InputStreamReader(is2));
-
-		boolean read = false;
-		
-		while ((line = br2.readLine()) != null) {
-			if (line.startsWith(STARTER) && line.indexOf(MARKER) != -1) {
-				LOG.debug("Command stderr line: {}", line);
-				devices.add(new FFmpegCliDevice(vfile, line));
-				read = true;
-				break;
-			}
-		}
-		if (!read) {
-			while ((line = br1.readLine()) != null) {
+	private final void CiclomaticComlexityReduced(File vfile, String[] cmd, List<WebcamDevice> devices, OutputStream os, InputStream is1, InputStream is2, Process process , String line , BufferedReader br1, BufferedReader br2){
+		try{
+			
+			process = RT.exec(cmd);
+	
+			os = process.getOutputStream();
+			is1 = process.getInputStream();
+			is2 = process.getErrorStream();
+	
+			os.close();
+	
+			br1 = new BufferedReader(new InputStreamReader(is1));
+			br2 = new BufferedReader(new InputStreamReader(is2));
+	
+			boolean read = false;
+			
+			while ((line = br2.readLine()) != null) {
 				if (line.startsWith(STARTER) && line.indexOf(MARKER) != -1) {
-					LOG.debug("Command stdout line: {}", line);
+					LOG.debug("Command stderr line: {}", line);
 					devices.add(new FFmpegCliDevice(vfile, line));
+					read = true;
 					break;
 				}
 			}
+			if (!read) {
+				while ((line = br1.readLine()) != null) {
+					if (line.startsWith(STARTER) && line.indexOf(MARKER) != -1) {
+						LOG.debug("Command stdout line: {}", line);
+						devices.add(new FFmpegCliDevice(vfile, line));
+						break;
+					}
+				}
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 	}
 	
@@ -89,7 +94,7 @@ public class FFmpegCliDriver implements WebcamDriver, WebcamDiscoverySupport {
 			}
 
 			try {
-				this.CiclomaticComlexityReduced(vfiles, cmd, devices, os, is1, is2, process, line, br1, br2);				
+				this.CiclomaticComlexityReduced(vfile, cmd, devices, os, is1, is2, process, line, br1, br2);				
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			} finally {
