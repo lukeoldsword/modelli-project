@@ -27,24 +27,24 @@ public class FFmpegCliDriver implements WebcamDriver, WebcamDiscoverySupport {
 	private static final String MARKER = "mjpeg";
 	private static final String STARTER = "[video4linux";
 
-	private final void CiclomaticComlexityReduced1(String[] cmd){
-		if (LOG.isDebugEnabled()) {
-			StringBuilder sb = new StringBuilder();
-			for (String c : cmd) {
-				sb.append(c).append(' ');
+	private final void CiclomaticComlexityReduced(File vfile, String[] cmd, List<WebcamDevice> devices, OutputStream os, InputStream is1, InputStream is2, Process process , String line , BufferedReader br1, BufferedReader br2){
+		while ((line = br2.readLine()) != null) {
+			if (line.startsWith(STARTER) && line.indexOf(MARKER) != -1) {
+				LOG.debug("Command stderr line: {}", line);
+				devices.add(new FFmpegCliDevice(vfile, line));
+				read = true;
+				break;
 			}
-			LOG.debug("Executing command: {}", sb.toString());
-		}		
-	}
-	
-	private final void CiclomaticComlexityReduced2(InputStream is1, InputStream is2){
-		try {
-			is1.close();
-			is2.close();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
 		}
-		
+		if (!read) {
+			while ((line = br1.readLine()) != null) {
+				if (line.startsWith(STARTER) && line.indexOf(MARKER) != -1) {
+					LOG.debug("Command stdout line: {}", line);
+					devices.add(new FFmpegCliDevice(vfile, line));
+					break;
+				}
+			}
+		}
 	}
 	
 	@Override
@@ -67,7 +67,13 @@ public class FFmpegCliDriver implements WebcamDriver, WebcamDiscoverySupport {
 
 			String[] cmd = new String[] { "ffmpeg", "-f", "video4linux2", "-list_formats", "all", "-i", vfile.getAbsolutePath() };
 
-			CiclomaticComlexityReduced1(cmd);
+			if (LOG.isDebugEnabled()) {
+				StringBuilder sb = new StringBuilder();
+				for (String c : cmd) {
+					sb.append(c).append(' ');
+				}
+				LOG.debug("Executing command: {}", sb.toString());
+			}
 
 			try {
 				process = RT.exec(cmd);
@@ -83,27 +89,16 @@ public class FFmpegCliDriver implements WebcamDriver, WebcamDiscoverySupport {
 
 				boolean read = false;
 				
-				while ((line = br2.readLine()) != null) {
-					if (line.startsWith(STARTER) && line.indexOf(MARKER) != -1) {
-						LOG.debug("Command stderr line: {}", line);
-						devices.add(new FFmpegCliDevice(vfile, line));
-						read = true;
-						break;
-					}
-				}
-				if (!read) {
-					while ((line = br1.readLine()) != null) {
-						if (line.startsWith(STARTER) && line.indexOf(MARKER) != -1) {
-							LOG.debug("Command stdout line: {}", line);
-							devices.add(new FFmpegCliDevice(vfile, line));
-							break;
-						}
-					}
-				}				
+				this.CiclomaticComlexityReduced(vfile, cmd, devices, os, is1, is2, process, line, br1, br2);		
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			} finally {
-				this.CiclomaticComlexityReduced2(is1, is2);
+				try {
+					is1.close();
+					is2.close();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
 			}
 		}
 
