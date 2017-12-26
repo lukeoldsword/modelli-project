@@ -284,6 +284,7 @@ public class Webcam {
 	 * @throws WebcamException when something went wrong
 	 */
 	public boolean open(boolean async, DelayCalculator delayCalculator) {
+
 		if (open.compareAndSet(false, true)) {
 
 			assert lock != null;
@@ -291,9 +292,11 @@ public class Webcam {
 			notificator = Executors.newSingleThreadExecutor(new NotificationThreadFactory());
 
 			// lock webcam for other Java (only) processes
+
 			lock.lock();
 
 			// open webcam device
+
 			WebcamOpenTask task = new WebcamOpenTask(driver, device);
 			try {
 				task.open();
@@ -312,6 +315,7 @@ public class Webcam {
 			LOG.debug("Webcam is now open {}", getName());
 
 			// install shutdown hook
+
 			try {
 				Runtime.getRuntime().addShutdownHook(hook = new WebcamShutdownHook(this));
 			} catch (IllegalStateException e) {
@@ -325,15 +329,17 @@ public class Webcam {
 			}
 
 			// setup non-blocking configuration
-			this.CiclomaticComplexityReduced1(async, delayCalculator);
-			
+
+			if (asynchronous == async) {
+				if (updater == null) {
+					updater = new WebcamUpdater(this, delayCalculator);
+				}
+				updater.start();
+			}
+
 			// notify listeners
-			WebcamEvent we = new WebcamEvent(WebcamEventType.OPEN, this);
-			Iterator<WebcamListener> wli = listeners.iterator();
-			WebcamListener l = null;
-
-			this.CiclomaticComplexityReduced2(wli, l, we);
-
+			notifyListener();
+			
 		} else {
 			LOG.debug("Webcam is already open {}", getName());
 		}
@@ -341,16 +347,12 @@ public class Webcam {
 		return true;
 	}
 	
-	private final void CiclomaticComplexityReduced1(boolean async, DelayCalculator delayCalculator){
-		if (asynchronous == async) {
-			if (updater == null) {
-				updater = new WebcamUpdater(this, delayCalculator);
-			}
-			updater.start();
-		}
-	}
-	
-	private final void CiclomaticComplexityReduced2(Iterator<WebcamListener> wli, WebcamListener l, WebcamEvent we){
+	// notify listeners
+	private void notifyListener(){
+		WebcamEvent we = new WebcamEvent(WebcamEventType.OPEN, this);
+		Iterator<WebcamListener> wli = listeners.iterator();
+		WebcamListener l = null;
+
 		while (wli.hasNext()) {
 			l = wli.next();
 			try {
@@ -359,6 +361,7 @@ public class Webcam {
 				LOG.error(String.format("Notify webcam open, exception when calling listener %s", l.getClass()), e);
 			}
 		}
+
 	}
 
 	/**
@@ -400,27 +403,8 @@ public class Webcam {
 			lock.unlock();
 
 			// notify listeners
-
-			WebcamEvent we = new WebcamEvent(WebcamEventType.CLOSED, this);
-			Iterator<WebcamListener> wli = listeners.iterator();
-			WebcamListener l = null;
-
-			while (wli.hasNext()) {
-				l = wli.next();
-				try {
-					l.webcamClosed(we);
-				} catch (Exception e) {
-					LOG.error(String.format("Notify webcam closed, exception when calling %s listener", l.getClass()), e);
-				}
-			}
-
-			notificator.shutdown();
-			while (!notificator.isTerminated()) {
-				try {
-					notificator.awaitTermination(100, TimeUnit.MILLISECONDS);
-				} catch (InterruptedException e) {
-					return false;
-				}
+			if(notifyListeners()==false){
+				return false;
 			}
 
 			LOG.debug("Webcam {} has been closed", getName());
@@ -430,6 +414,33 @@ public class Webcam {
 		}
 
 		return true;
+	}
+	
+	private boolean notifyListeners(){
+		// notify listeners
+					
+					WebcamEvent we = new WebcamEvent(WebcamEventType.CLOSED, this);
+					Iterator<WebcamListener> wli = listeners.iterator();
+					WebcamListener l = null;
+
+					while (wli.hasNext()) {
+						l = wli.next();
+						try {
+							l.webcamClosed(we);
+						} catch (Exception e) {
+							LOG.error(String.format("Notify webcam closed, exception when calling %s listener", l.getClass()), e);
+						}
+					}
+
+					notificator.shutdown();
+					while (!notificator.isTerminated()) {
+						try {
+							notificator.awaitTermination(100, TimeUnit.MILLISECONDS);
+						} catch (InterruptedException e) {
+							return false;
+						}
+					}
+					return true;
 	}
 
 	/**
@@ -604,7 +615,7 @@ public class Webcam {
 		device.setResolution(size);
 	}
 	
-	private static void isValidAndSet(Dimension[] predefined,Dimension[] custom, Dimension size){
+	private void isValidAndSet(Dimension[] predefined,Dimension[] custom, Dimension size){
 		boolean ok = false;
 		for (Dimension d : predefined) {
 			if (d.width == size.width && d.height == size.height) {
@@ -621,6 +632,12 @@ public class Webcam {
 			}
 		}
 
+		//incorrect dimension
+		incorrectDimension(ok, size, predefined, custom);
+		
+	}
+
+	private void incorrectDimension(boolean ok,Dimension size, Dimension[] predefined, Dimension[] custom){
 		if (!ok) {
 			StringBuilder sb = new StringBuilder("Incorrect dimension [");
 			sb.append(size.width).append("x").append(size.height).append("] ");
@@ -634,7 +651,6 @@ public class Webcam {
 			throw new IllegalArgumentException(sb.toString());
 		}
 	}
-
 	/**
 	 * Capture image from webcam and return it. Will return image object or null if webcam is closed
 	 * or has been already disposed by JVM.<br>

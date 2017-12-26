@@ -77,7 +77,7 @@ public class WebcamDefaultDevice implements WebcamDevice, BufferAccess, Runnable
 				return;
 			}
 
-			result.set(grabber.nextFrame());
+			result.set(grabber.nextFrameP());
 			fresh.set(true);
 		}
 	}
@@ -214,7 +214,7 @@ public class WebcamDefaultDevice implements WebcamDevice, BufferAccess, Runnable
 
 		LOG.trace("Webcam grabber get image pointer");
 
-		Pointer<Byte> image = grabber.getImage();
+		Pointer<Byte> image = grabber.getImageP();
 		fresh.set(false);
 
 		if (image == null) {
@@ -258,7 +258,7 @@ public class WebcamDefaultDevice implements WebcamDevice, BufferAccess, Runnable
 
 		LOG.trace("Webcam grabber get image pointer");
 
-		Pointer<Byte> image = grabber.getImage();
+		Pointer<Byte> image = grabber.getImageP();
 		fresh.set(false);
 
 		if (image == null) {
@@ -323,7 +323,7 @@ public class WebcamDefaultDevice implements WebcamDevice, BufferAccess, Runnable
 		// issue on 32-bit systems which prevents grabber to find devices.
 		// According to the mentioned note this for loop shall fix the problem.
 
-		DeviceList list = grabber.getVideoDevices().get();
+		DeviceList list = grabber.getVideoDevicesP();
 		for (Device d : list.asArrayList()) {
 			d.getNameStr();
 			d.getIdentifierStr();
@@ -337,11 +337,11 @@ public class WebcamDefaultDevice implements WebcamDevice, BufferAccess, Runnable
 		// set timeout, this MUST be done after grabber is open and before it's closed, otherwise it
 		// will result as crash
 
-		grabber.setTimeout(timeout);
+		grabber.setTimeoutP(timeout);
 
 		LOG.debug("Webcam device session started");
 
-		Dimension size2 = new Dimension(grabber.getWidth(), grabber.getHeight());
+		Dimension size2 = new Dimension(grabber.getWidthP(), grabber.getHeightP());
 
 		int w1 = size.width;
 		int w2 = size2.width;
@@ -386,7 +386,7 @@ public class WebcamDefaultDevice implements WebcamDevice, BufferAccess, Runnable
 	 */
 	private void clearMemoryBuffer() {
 		for (int i = 0; i < DEVICE_BUFFER_SIZE; i++) {
-			grabber.nextFrame();
+			grabber.nextFrameP();
 		}
 	}
 
@@ -412,7 +412,7 @@ public class WebcamDefaultDevice implements WebcamDevice, BufferAccess, Runnable
 
 		LOG.debug("Closing webcam device");
 
-		grabber.stopSession();
+		grabber.stopSessionP();
 	}
 
 	@Override

@@ -108,21 +108,8 @@ public class WebcamDiscoveryService implements Runnable {
 
 				executor.shutdown();
 
-				try {
-
-					executor.awaitTermination(timeout, tunit);
-
-					if (future.isDone()) {
-						webcams = future.get();
-					} else {
-						future.cancel(true);
-					}
-
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				} catch (ExecutionException e) {
-					throw new WebcamException(e);
-				}
+				//try executor termination
+				executorTermination(timeout, tunit, executor, future );
 
 				if (webcams == null) {
 					throw new TimeoutException(String.format("Webcams discovery timeout (%d ms) has been exceeded", timeout));
@@ -144,6 +131,25 @@ public class WebcamDiscoveryService implements Runnable {
 		}
 
 		return Collections.unmodifiableList(webcams);
+	}
+	
+	//try executor termination
+	private void executorTermination(long timeout, TimeUnit tunit, ExecutorService executor,Future<List<Webcam>> future){
+		try {
+
+			executor.awaitTermination(timeout, tunit);
+
+			if (future.isDone()) {
+				webcams = future.get();
+			} else {
+				future.cancel(true);
+			}
+
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (ExecutionException e) {
+			throw new WebcamException(e);
+		}
 	}
 
 	/**
@@ -168,6 +174,55 @@ public class WebcamDiscoveryService implements Runnable {
 		List<WebcamDevice> oldones = new LinkedList<WebcamDevice>(tmpold);
 		List<WebcamDevice> newones = new LinkedList<WebcamDevice>(tmpnew);
 
+		//reduced list
+		reducedList(oldones, newones);
+		
+		// check if any left in old ones it means that devices has been removed
+		
+		checkRemoved(oldones, tmpnew, listeners);
+
+		// if any left in new ones it means that devices has been added
+		if (newones.size() > 0) {
+
+			setCurrentWebcams(tmpnew);
+
+			for (WebcamDevice device : newones) {
+				for (Webcam webcam : webcams) {
+					if (webcam.getDevice().getName().equals(device.getName())) {
+						notifyWebcamFound(webcam, listeners);
+						break;
+					}
+				}
+			}
+		}
+	}
+	
+	// if any left in old ones it means that devices has been removed
+	private void checkRemoved(List<WebcamDevice> oldones, List<WebcamDevice> tmpnew ,WebcamDiscoveryListener[] listeners) {
+		if (oldones.size() > 0) {
+
+			List<Webcam> notified = new ArrayList<Webcam>();
+
+			for (WebcamDevice device : oldones) {
+				for (Webcam webcam : webcams) {
+					if (webcam.getDevice().getName().equals(device.getName())) {
+						notified.add(webcam);
+						break;
+					}
+				}
+			}
+
+			setCurrentWebcams(tmpnew);
+
+			for (Webcam webcam : notified) {
+				notifyWebcamGone(webcam, listeners);
+				webcam.dispose();
+			}
+		}
+
+	}
+	
+	private void reducedList(List<WebcamDevice> oldones, List<WebcamDevice> newones ){
 		Iterator<WebcamDevice> oi = oldones.iterator();
 		Iterator<WebcamDevice> ni = null;
 
@@ -192,43 +247,6 @@ public class WebcamDiscoveryService implements Runnable {
 					ni.remove();
 					oi.remove();
 					break;
-				}
-			}
-		}
-
-		// if any left in old ones it means that devices has been removed
-		if (oldones.size() > 0) {
-
-			List<Webcam> notified = new ArrayList<Webcam>();
-
-			for (WebcamDevice device : oldones) {
-				for (Webcam webcam : webcams) {
-					if (webcam.getDevice().getName().equals(device.getName())) {
-						notified.add(webcam);
-						break;
-					}
-				}
-			}
-
-			setCurrentWebcams(tmpnew);
-
-			for (Webcam webcam : notified) {
-				notifyWebcamGone(webcam, listeners);
-				webcam.dispose();
-			}
-		}
-
-		// if any left in new ones it means that devices has been added
-		if (newones.size() > 0) {
-
-			setCurrentWebcams(tmpnew);
-
-			for (WebcamDevice device : newones) {
-				for (Webcam webcam : webcams) {
-					if (webcam.getDevice().getName().equals(device.getName())) {
-						notifyWebcamFound(webcam, listeners);
-						break;
-					}
 				}
 			}
 		}

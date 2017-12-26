@@ -107,32 +107,34 @@ public class FFmpegCliDevice implements WebcamDevice, WebcamDevice.BufferAccess 
 		}		
 	}
 
-	private synchronized byte[] readBytes() {
-		if (!open.get()) {
-			return null;
+	private byte[] readBytes() {
+		synchronized (this) {
+			if (!open.get()) {
+				return null;
+			}
+
+			baos.reset();
+
+			int b=0, c=0;
+			try {// search for SOI
+				boolean founded = false;
+				do {
+					if (((b = dis.readUnsignedByte()) == 0xFF) && ((c = dis.readUnsignedByte()) == 0xD8)) {
+							baos.write(b);
+							baos.write(c);
+							founded = true; //SOI found
+					}
+				} while (!founded);
+
+				// read until EOI
+				CiclomaticComlexityReduced(c);
+				
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+
+			return baos.toByteArray();	
 		}
-
-		baos.reset();
-
-		int b, c;
-		try {// search for SOI
-			boolean founded = false;
-			do {
-				if (((b = dis.readUnsignedByte()) == 0xFF) && ((c = dis.readUnsignedByte()) == 0xD8)) {
-						baos.write(b);
-						baos.write(c);
-						founded = true; //SOI found
-				}
-			} while (!founded);
-
-			// read until EOI
-			CiclomaticComlexityReduced(c);
-			
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-
-		return baos.toByteArray();
 	}
 
 	@Override
