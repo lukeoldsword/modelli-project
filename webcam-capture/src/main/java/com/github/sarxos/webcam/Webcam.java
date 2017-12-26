@@ -284,7 +284,6 @@ public class Webcam {
 	 * @throws WebcamException when something went wrong
 	 */
 	public boolean open(boolean async, DelayCalculator delayCalculator) {
-
 		if (open.compareAndSet(false, true)) {
 
 			assert lock != null;
@@ -292,11 +291,9 @@ public class Webcam {
 			notificator = Executors.newSingleThreadExecutor(new NotificationThreadFactory());
 
 			// lock webcam for other Java (only) processes
-
 			lock.lock();
 
 			// open webcam device
-
 			WebcamOpenTask task = new WebcamOpenTask(driver, device);
 			try {
 				task.open();
@@ -315,7 +312,6 @@ public class Webcam {
 			LOG.debug("Webcam is now open {}", getName());
 
 			// install shutdown hook
-
 			try {
 				Runtime.getRuntime().addShutdownHook(hook = new WebcamShutdownHook(this));
 			} catch (IllegalStateException e) {
@@ -329,34 +325,40 @@ public class Webcam {
 			}
 
 			// setup non-blocking configuration
-
-			if (asynchronous == async) {
-				if (updater == null) {
-					updater = new WebcamUpdater(this, delayCalculator);
-				}
-				updater.start();
-			}
-
+			this.CiclomaticComplexityReduced1(async, delayCalculator);
+			
 			// notify listeners
-
 			WebcamEvent we = new WebcamEvent(WebcamEventType.OPEN, this);
 			Iterator<WebcamListener> wli = listeners.iterator();
 			WebcamListener l = null;
 
-			while (wli.hasNext()) {
-				l = wli.next();
-				try {
-					l.webcamOpen(we);
-				} catch (Exception e) {
-					LOG.error(String.format("Notify webcam open, exception when calling listener %s", l.getClass()), e);
-				}
-			}
+			this.CiclomaticComplexityReduced2(wli, l, we);
 
 		} else {
 			LOG.debug("Webcam is already open {}", getName());
 		}
 
 		return true;
+	}
+	
+	private final void CiclomaticComplexityReduced1(boolean async, DelayCalculator delayCalculator){
+		if (asynchronous == async) {
+			if (updater == null) {
+				updater = new WebcamUpdater(this, delayCalculator);
+			}
+			updater.start();
+		}
+	}
+	
+	private final void CiclomaticComplexityReduced2(Iterator<WebcamListener> wli, WebcamListener l, WebcamEvent we){
+		while (wli.hasNext()) {
+			l = wli.next();
+			try {
+				l.webcamOpen(we);
+			} catch (Exception e) {
+				LOG.error(String.format("Notify webcam open, exception when calling listener %s", l.getClass()), e);
+			}
+		}
 	}
 
 	/**
