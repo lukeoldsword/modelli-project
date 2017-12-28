@@ -150,6 +150,25 @@ public class FsWebcamDevice implements WebcamDevice, Configurable {
 	public void setResolution(Dimension resolution) {
 		this.resolution = resolution;
 	}
+	
+	private final void CiclomaticComplexityReduced1(int b, int c){
+		try{
+			boolean founded = false;
+			
+			while (!founded) {
+				if ((b = dis.readUnsignedByte()) == 0xFF) {
+					if ((c = dis.readUnsignedByte()) == 0xD8) {
+						baos.write(b);
+						baos.write(c);
+						founded = true; // SOI found
+					}
+				}
+			}			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
 
 	private synchronized byte[] readBytes() {
 
@@ -161,28 +180,21 @@ public class FsWebcamDevice implements WebcamDevice, Configurable {
 
 		int b, c;
 		try {
-
 			// search for SOI
-			while (true) {
-				if ((b = dis.readUnsignedByte()) == 0xFF) {
-					if ((c = dis.readUnsignedByte()) == 0xD8) {
-						baos.write(b);
-						baos.write(c);
-						break; // SOI found
-					}
-				}
-			}
-
+			this.CiclomaticComplexityReduced1(b, c);
+			
+			boolean founded = false;
+			
 			// read until EOI
 			do {
 				baos.write(c = dis.readUnsignedByte());
 				if (c == 0xFF) {
 					baos.write(c = dis.readUnsignedByte());
 					if (c == 0xD9) {
-						break; // EOI found
+						founded=true; // EOI found
 					}
 				}
-			} while (true);
+			} while (!founded);
 
 		} catch (IOException e) {
 			throw new RuntimeException(e);
