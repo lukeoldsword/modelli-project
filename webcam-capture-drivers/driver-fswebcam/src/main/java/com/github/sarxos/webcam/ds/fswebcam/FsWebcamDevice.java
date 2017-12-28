@@ -203,6 +203,21 @@ public class FsWebcamDevice implements WebcamDevice, Configurable {
 		return baos.toByteArray();
 
 	}
+	
+	private final void CiclomaticComplexityReduced2(){
+		try {
+			if (dis != null)
+				dis.close();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}		
+	}
+	
+	private final void CiclomaticComplexityReduced3(){
+		if (Thread.interrupted()) {
+			throw new RuntimeException("Thread has been interrupted #"+counter);
+		}
+	}
 
 	@Override
 	public BufferedImage getImage() {
@@ -249,19 +264,12 @@ public class FsWebcamDevice implements WebcamDevice, Configurable {
 			process.destroy();
 		} finally {
 
-			try {
-				if (dis != null)
-					dis.close();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
+			this.CiclomaticComplexityReduced2();
 
 			// w/a for bug in java 1.6 - waitFor requires Thread.interrupted()
 			// call in finally block to reset thread flags
 
-			if (Thread.interrupted()) {
-				throw new RuntimeException("Thread has been interrupted #"+counter);
-			}
+			this.CiclomaticComplexityReduced3();
 		}
 
 		return image;
