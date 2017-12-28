@@ -249,86 +249,76 @@ public class WebcamPanel extends JPanel implements WebcamListener, PropertyChang
 			if (w == image.getWidth() && h == image.getHeight() && !mirrored) {
 				resizedImage = image;
 			} else {
-
-				GraphicsEnvironment genv = GraphicsEnvironment.getLocalGraphicsEnvironment();
-				GraphicsConfiguration gc = genv.getDefaultScreenDevice().getDefaultConfiguration();
-
-				Graphics2D gr = null;
-				try {
-
-					resizedImage = gc.createCompatibleImage(pw, ph);
-					gr = resizedImage.createGraphics();
-					gr.setComposite(AlphaComposite.Src);
-
-					for (Map.Entry<RenderingHints.Key, Object> hint : imageRenderingHints.entrySet()) {
-						gr.setRenderingHint(hint.getKey(), hint.getValue());
-					}
-
-					gr.setBackground(Color.BLACK);
-					gr.setColor(Color.BLACK);
-					gr.fillRect(0, 0, pw, ph);
-
-					int sx1, sx2, sy1, sy2; // source rectangle coordinates
-					int dx1, dx2, dy1, dy2; // destination rectangle coordinates
-
-					dx1 = x;
-					dy1 = y;
-					dx2 = x + w;
-					dy2 = y + h;
-
-					if (mirrored) {
-						sx1 = iw;
-						sy1 = 0;
-						sx2 = 0;
-						sy2 = ih;
-					} else {
-						sx1 = 0;
-						sy1 = 0;
-						sx2 = iw;
-						sy2 = ih;
-					}
-
-					gr.drawImage(image, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, null);
-
-				} finally {
-					if (gr != null) {
-						gr.dispose();
-					}
-				}
+				//set source and destination rectangle coordinates
+				setSourceAndDestinationCoordinates(pw, ph, x, y, w, h,iw, ih);
 			}
 
 			g2.drawImage(resizedImage, 0, 0, null);
 
-			if (isFPSDisplayed()) {
+			// Set FPS Displayed
+			SetFpsDisplayed(g2, ph);
 
-				String str = String.format("FPS: %.1f", webcam.getFPS());
+			// Set Font And Color
+			SetFontAndColor(g2, iw, ih, pw, ph);
 
-				int sx = 5;
-				int sy = ph - 5;
+			// Set repaint time
+			setRepaintTime(g2);
 
-				g2.setFont(getFont());
-				g2.setColor(Color.BLACK);
-				g2.drawString(str, sx + 1, sy + 1);
-				g2.setColor(Color.WHITE);
-				g2.drawString(str, sx, sy);
+			g2.setRenderingHint(KEY_ANTIALIASING, antialiasing);
+			g2.setRenderingHint(KEY_RENDERING, rendering);
+		}
+		
+		//set source and destination rectangle coordinates
+		private void setSourceAndDestinationCoordinates(int pw, int ph, int x, int y, int w, int h, int iw, int ih){
+			GraphicsEnvironment genv = GraphicsEnvironment.getLocalGraphicsEnvironment();
+			GraphicsConfiguration gc = genv.getDefaultScreenDevice().getDefaultConfiguration();
+
+			Graphics2D gr = null;
+			try {
+
+				resizedImage = gc.createCompatibleImage(pw, ph);
+				gr = resizedImage.createGraphics();
+				gr.setComposite(AlphaComposite.Src);
+
+				for (Map.Entry<RenderingHints.Key, Object> hint : imageRenderingHints.entrySet()) {
+					gr.setRenderingHint(hint.getKey(), hint.getValue());
+				}
+
+				gr.setBackground(Color.BLACK);
+				gr.setColor(Color.BLACK);
+				gr.fillRect(0, 0, pw, ph);
+
+				int sx1, sx2, sy1, sy2; // source rectangle coordinates
+				int dx1, dx2, dy1, dy2; // destination rectangle coordinates
+
+				dx1 = x;
+				dy1 = y;
+				dx2 = x + w;
+				dy2 = y + h;
+
+				if (mirrored) {
+					sx1 = iw;
+					sy1 = 0;
+					sx2 = 0;
+					sy2 = ih;
+				} else {
+					sx1 = 0;
+					sy1 = 0;
+					sx2 = iw;
+					sy2 = ih;
+				}
+
+				gr.drawImage(image, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, null);
+
+			} finally {
+				if (gr != null) {
+					gr.dispose();
+				}
 			}
-
-			if (isImageSizeDisplayed()) {
-
-				String res = String.format("%d\u2A2F%d px", iw, ih);
-
-				FontMetrics metrics = g2.getFontMetrics(getFont());
-				int sw = metrics.stringWidth(res);
-				int sx = pw - sw - 5;
-				int sy = ph - 5;
-
-				g2.setFont(getFont());
-				g2.setColor(Color.BLACK);
-				g2.drawString(res, sx + 1, sy + 1);
-				g2.setColor(Color.WHITE);
-				g2.drawString(res, sx, sy);
-			}
-
+		}
+		
+		// Set repaint time
+		private void setRepaintTime(Graphics2D g2){
 			if (isDisplayDebugInfo()) {
 
 				if (lastRepaintTime < 0) {
@@ -345,10 +335,44 @@ public class WebcamPanel extends JPanel implements WebcamListener, PropertyChang
 					g2.drawString(res, 5, 15);
 				}
 			}
-
-			g2.setRenderingHint(KEY_ANTIALIASING, antialiasing);
-			g2.setRenderingHint(KEY_RENDERING, rendering);
 		}
+		
+		// Set Font And Color
+		private void SetFontAndColor(Graphics2D g2, int iw, int ih, int pw, int ph){
+			if (isImageSizeDisplayed()) {
+
+				String res = String.format("%d\u2A2F%d px", iw, ih);
+
+				FontMetrics metrics = g2.getFontMetrics(getFont());
+				int sw = metrics.stringWidth(res);
+				int sx = pw - sw - 5;
+				int sy = ph - 5;
+
+				g2.setFont(getFont());
+				g2.setColor(Color.BLACK);
+				g2.drawString(res, sx + 1, sy + 1);
+				g2.setColor(Color.WHITE);
+				g2.drawString(res, sx, sy);
+			}
+		}
+		
+		// Set FPS Displayed
+		private void SetFpsDisplayed(Graphics2D g2, int ph){
+			if (isFPSDisplayed()) {
+
+				String str = String.format("FPS: %.1f", webcam.getFPS());
+
+				int sx = 5;
+				int sy = ph - 5;
+
+				g2.setFont(getFont());
+				g2.setColor(Color.BLACK);
+				g2.drawString(str, sx + 1, sy + 1);
+				g2.setColor(Color.WHITE);
+				g2.drawString(str, sx, sy);
+			}
+		}
+		
 	}
 
 	private static final class PanelThreadFactory implements ThreadFactory {

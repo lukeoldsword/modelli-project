@@ -73,27 +73,14 @@ public class WebcamStreamer implements ThreadFactory, WebcamListener {
 				bos = new BufferedOutputStream(socket.getOutputStream());
 			} catch (IOException e) {
 				LOG.error("Fatal I/O exception when creating socket streams", e);
-				try {
-					socket.close();
-				} catch (IOException e1) {
-					LOG.error("Canot close socket connection from " + socket.getRemoteSocketAddress(), e1);
-				}
+				closeSocket();
 				return;
 			}
 
 			// consume whole input
-
-			try {
-				while (br.ready()) {
-					br.readLine();
-				}
-			} catch (IOException e) {
-				LOG.error("Error when reading input", e);
-				return;
-			}
+			ConsumeWholeInput(br);
 
 			// stream
-
 			try {
 
 				socket.setSoTimeout(0);
@@ -112,99 +99,148 @@ public class WebcamStreamer implements ThreadFactory, WebcamListener {
 					sb.append(CRLF);
 
 					bos.write(sb.toString().getBytes());
-
-					do {
-
-						if (!webcam.isOpen() || socket.isInputShutdown() || socket.isClosed()) {
-							br.close();
-							bos.close();
-							return;
-						}
-
-						baos.reset();
-
-						long now = System.currentTimeMillis();
-						if (now > last + delay) {
-							image = webcam.getImage();
-						}
-
-						ImageIO.write(image, "JPG", baos);
-
-						sb.delete(0, sb.length());
-						sb.append("--").append(BOUNDARY).append(CRLF);
-						sb.append("Content-type: image/jpeg").append(CRLF);
-						sb.append("Content-Length: ").append(baos.size()).append(CRLF);
-						sb.append(CRLF);
-
-						try {
-							bos.write(sb.toString().getBytes());
-							bos.write(baos.toByteArray());
-							bos.write(CRLF.getBytes());
-							bos.flush();
-						} catch (SocketException e) {
-
-							if (!socket.isConnected()) {
-								LOG.debug("Connection to client has been lost");
-							}
-							if (socket.isClosed()) {
-								LOG.debug("Connection to client is closed");
-							}
-
-							try {
-								br.close();
-								bos.close();
-							} catch (SocketException se) {
-								LOG.debug("Exception when closing socket", se);
-							}
-
-							LOG.debug("Socket exception from " + socket.getRemoteSocketAddress(), e);
-
-							return;
-						}
-
-						Thread.sleep(delay);
-
-					} while (started.get());
+					
+					if(stringBuildAppend(br, bos,baos,sb)==true){
+						return;
+					}
+					
 				}
 			} catch (Exception e) {
 
 				String message = e.getMessage();
 
 				if (message != null) {
-					if (message.startsWith("Software caused connection abort")) {
-						LOG.info("User closed stream");
-						return;
-					}
-					if (message.startsWith("Broken pipe")) {
-						LOG.info("User connection broken");
-						return;
-					}
+					messageDebug(message);
+					return;
 				}
 
 				LOG.error("Error", e);
-
-				try {
-					bos.write("HTTP/1.0 501 Internal Server Error\r\n\r\n\r\n".getBytes());
-				} catch (IOException e1) {
-					LOG.error("Not ablte to write to output stream", e);
-				}
+				writeBos(bos, e);
 
 			} finally {
-
-				LOG.info("Closing connection from {}", socket.getRemoteSocketAddress());
-
-				for (Closeable closeable : new Closeable[] { br, bos, baos }) {
-					try {
-						closeable.close();
-					} catch (IOException e) {
-						LOG.debug("Cannot close socket", e);
-					}
+				//close connection to socket
+				closeConnection(br, bos, baos);
+			}
+		}
+		
+		private boolean stringBuildAppend(BufferedReader br, BufferedOutputStream bos,ByteArrayOutputStream baos,StringBuilder sb) throws IOException, InterruptedException{
+			do {
+				if (!webcam.isOpen() || socket.isInputShutdown() || socket.isClosed()) {
+					br.close();
+					bos.close();
+					return true;
 				}
+
+				baos.reset();
+				setImmage();
+				
+				ImageIO.write(image, "JPG", baos);
+
+				sb.delete(0, sb.length());
+				sb.append("--").append(BOUNDARY).append(CRLF);
+				sb.append("Content-type: image/jpeg").append(CRLF);
+				sb.append("Content-Length: ").append(baos.size()).append(CRLF);
+				sb.append(CRLF);
+
 				try {
-					socket.close();
+					bos.write(sb.toString().getBytes());
+					bos.write(baos.toByteArray());
+					bos.write(CRLF.getBytes());
+					bos.flush();
+				} catch (SocketException e) {
+					socketDebug();
+					closeConnection(br, bos);
+
+					LOG.debug("Socket exception from " + socket.getRemoteSocketAddress(), e);
+
+					return true;
+				}
+
+				Thread.sleep(delay);
+
+			} while (started.get());
+			return false;
+		}
+		
+		private void setImmage(){
+			long now = System.currentTimeMillis();
+			if (now > last + delay) {
+				image = webcam.getImage();
+			}
+
+		}
+		
+		private void writeBos(BufferedOutputStream bos, Exception e){
+			try {
+				bos.write("HTTP/1.0 501 Internal Server Error\r\n\r\n\r\n".getBytes());
+			} catch (IOException e1) {
+				LOG.error("Not ablte to write to output stream", e);
+			}
+		}
+		
+		//close connection to socket
+		private void closeConnection(BufferedReader br, BufferedOutputStream bos) throws IOException{
+			try {
+				br.close();
+				bos.close();
+			} catch (SocketException se) {
+				LOG.debug("Exception when closing socket", se);
+			}
+		}
+		
+		//close connection to socket
+		private void closeConnection(BufferedReader br, BufferedOutputStream bos, ByteArrayOutputStream baos){
+			LOG.info("Closing connection from {}", socket.getRemoteSocketAddress());
+
+			for (Closeable closeable : new Closeable[] { br, bos, baos }) {
+				try {
+					closeable.close();
 				} catch (IOException e) {
 					LOG.debug("Cannot close socket", e);
 				}
+			}
+			try {
+				socket.close();
+			} catch (IOException e) {
+				LOG.debug("Cannot close socket", e);
+			}
+		}
+		
+		// consume whole input
+		private void ConsumeWholeInput(BufferedReader br){
+			try {
+				while (br.ready()) {
+					br.readLine();
+				}
+			} catch (IOException e) {
+				LOG.error("Error when reading input", e);
+				return;
+			}
+		}
+		
+		private void closeSocket(){
+			try {
+				socket.close();
+			} catch (IOException e1) {
+				LOG.error("Canot close socket connection from " + socket.getRemoteSocketAddress(), e1);
+			}
+		}
+		
+		private void socketDebug(){
+			if (!socket.isConnected()) {
+				LOG.debug("Connection to client has been lost");
+			}
+			if (socket.isClosed()) {
+				LOG.debug("Connection to client is closed");
+			}
+		}
+		
+		private void messageDebug(String message){
+			if (message.startsWith("Software caused connection abort")) {
+				LOG.info("User closed stream");
+			}
+			if (message.startsWith("Broken pipe")) {
+				LOG.info("User connection broken");
 			}
 		}
 	}
