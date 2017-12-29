@@ -41,7 +41,7 @@ public class FsWebcamDevice implements WebcamDevice, Configurable {
 	public static final String PARAM_KEY_LOG = "log";
 	public static final String PARAM_KEY_VERBOSE = "verbose";
 
-	public static final class ExecutorThreadFactory implements ThreadFactory {
+	protected static final class ExecutorThreadFactory implements ThreadFactory {
 
 		private final AtomicInteger number = new AtomicInteger(0);
 
@@ -55,7 +55,7 @@ public class FsWebcamDevice implements WebcamDevice, Configurable {
 		}
 	}
 
-	public static final class StreamReader implements Runnable {
+	protected static final class StreamReader implements Runnable {
 
 		private final BufferedReader br;
 		private final boolean err;
