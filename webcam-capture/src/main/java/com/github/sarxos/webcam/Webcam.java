@@ -71,14 +71,16 @@ public class Webcam {
 
 		@Override
 		public void run() {
+			Class<? extends WebcamListener> classe = null;
 			if (image != null) {
 				WebcamEvent we = new WebcamEvent(WebcamEventType.NEW_IMAGE, webcam, image);
-				for (WebcamListener l : webcam.getWebcamListeners()) {
-					try {
+				try {
+					for (WebcamListener l : webcam.getWebcamListeners()) {
 						l.webcamImageObtained(we);
-					} catch (Exception e) {
-						LOG.error(String.format("Notify image acquired, exception when calling listener %s", l.getClass()), e);
+						classe = l.getClass();
 					}
+				} catch (Exception e) {
+					LOG.error(String.format("Notify image acquired, exception when calling listener %s", classe), e);
 				}
 			}
 		}
@@ -308,7 +310,7 @@ public class Webcam {
 			} catch (WebcamException e) {
 				lock.unlock();
 				open.set(false);
-				LOG.debug("Webcam exception when opening", e);
+				LOG.debug("Webcam exception when opening");
 				throw e;
 			}
 
@@ -321,7 +323,6 @@ public class Webcam {
 			} catch (IllegalStateException e) {
 
 				LOG.debug("Shutdown in progress, do not open device");
-				LOG.trace(e.getMessage(), e);
 
 				close();
 
@@ -352,16 +353,15 @@ public class Webcam {
 		WebcamEvent we = new WebcamEvent(WebcamEventType.OPEN, this);
 		Iterator<WebcamListener> wli = listeners.iterator();
 		WebcamListener l = null;
-
-		while (wli.hasNext()) {
-			l = wli.next();
-			try {
+		
+		try {
+			while (wli.hasNext()) {
+				l = wli.next();
 				l.webcamOpen(we);
-			} catch (Exception e) {
-				LOG.error(String.format("Notify webcam open, exception when calling listener %s", l.getClass()), e);
 			}
+		} catch (Exception e) {
+			LOG.error(String.format("Notify webcam open, exception when calling listener %s", l.getClass()), e);
 		}
-
 	}
 
 	/**
@@ -418,29 +418,29 @@ public class Webcam {
 	
 	private boolean notifyListeners(){
 		// notify listeners
-					
-					WebcamEvent we = new WebcamEvent(WebcamEventType.CLOSED, this);
-					Iterator<WebcamListener> wli = listeners.iterator();
-					WebcamListener l = null;
 
-					while (wli.hasNext()) {
-						l = wli.next();
-						try {
-							l.webcamClosed(we);
-						} catch (Exception e) {
-							LOG.error(String.format("Notify webcam closed, exception when calling %s listener", l.getClass()), e);
-						}
-					}
+		WebcamEvent we = new WebcamEvent(WebcamEventType.CLOSED, this);
+		Iterator<WebcamListener> wli = listeners.iterator();
+		WebcamListener l = null;
 
-					notificator.shutdown();
-					while (!notificator.isTerminated()) {
-						try {
-							notificator.awaitTermination(100, TimeUnit.MILLISECONDS);
-						} catch (InterruptedException e) {
-							return false;
-						}
-					}
-					return true;
+		try {
+			while (wli.hasNext()) {
+				l = wli.next();
+				l.webcamClosed(we);
+			}
+		} catch (Exception e) {
+			LOG.error(String.format("Notify webcam closed, exception when calling %s listener", l.getClass()), e);
+		}
+
+		notificator.shutdown();
+		try {
+			while (!notificator.isTerminated()) {
+				notificator.awaitTermination(100, TimeUnit.MILLISECONDS);
+			}
+		} catch (InterruptedException e) {
+			return false;
+		}
+		return true;
 	}
 
 	/**
@@ -487,16 +487,16 @@ public class Webcam {
 		Iterator<WebcamListener> wli = listeners.iterator();
 		WebcamListener l = null;
 
-		while (wli.hasNext()) {
-			l = wli.next();
-			try {
+		try {
+			while (wli.hasNext()) {
+				l = wli.next();
 				l.webcamClosed(we);
 				l.webcamDisposed(we);
-			} catch (Exception e) {
-				LOG.error(String.format("Notify webcam disposed, exception when calling %s listener", l.getClass()), e);
 			}
+		} catch (Exception e) {
+			LOG.error(String.format("Notify webcam disposed, exception when calling %s listener", l.getClass()), e);
 		}
-
+		
 		removeShutdownHook();
 
 		LOG.debug("Webcam disposed {}", getName());
@@ -842,7 +842,7 @@ public class Webcam {
 		try {
 			return getWebcams(Long.MAX_VALUE);
 		} catch (TimeoutException e) {
-			throw new RuntimeException(e);
+			throw new RuntimeException("No webcam detected");
 		}
 	}
 
@@ -875,25 +875,27 @@ public class Webcam {
 	 * @throws WebcamException when something is wrong
 	 * @throws IllegalArgumentException when timeout is negative or tunit null
 	 */
-	public static synchronized List<Webcam> getWebcams(long timeout, TimeUnit tunit) throws TimeoutException, WebcamException {
-
-		if (timeout < 0) {
-			throw new IllegalArgumentException(String.format("Timeout cannot be negative (%d)", timeout));
+	public static  List<Webcam> getWebcams(long timeout, TimeUnit tunit) throws TimeoutException, WebcamException {
+		synchronized (getDiscoveryService()) {
+			
+			if (timeout < 0) {
+				throw new IllegalArgumentException(String.format("Timeout cannot be negative (%d)", timeout));
+			}
+			if (tunit == null) {
+				throw new IllegalArgumentException("Time unit cannot be null!");
+			}
+	
+			WebcamDiscoveryService discovery = getDiscoveryService();
+	
+			assert discovery != null;
+	
+			List<Webcam> webcams = discovery.getWebcams(timeout, tunit);
+			if (!discovery.isRunning()) {
+				discovery.start();
+			}
+	
+			return webcams;
 		}
-		if (tunit == null) {
-			throw new IllegalArgumentException("Time unit cannot be null!");
-		}
-
-		WebcamDiscoveryService discovery = getDiscoveryService();
-
-		assert discovery != null;
-
-		List<Webcam> webcams = discovery.getWebcams(timeout, tunit);
-		if (!discovery.isRunning()) {
-			discovery.start();
-		}
-
-		return webcams;
 	}
 
 	/**
@@ -910,7 +912,7 @@ public class Webcam {
 		} catch (TimeoutException e) {
 			// this should never happen since user would have to wait 300000000
 			// years for it to occur
-			throw new RuntimeException(e);
+			throw new RuntimeException("No default webcam");
 		}
 	}
 
@@ -1030,9 +1032,9 @@ public class Webcam {
 	 *
 	 * @return Webcam driver
 	 */
-	public static synchronized WebcamDriver getDriver() {
-
-		if (driver != null) {
+	public static  WebcamDriver getDriver() {
+		synchronized (DRIVERS_LIST) {
+			if (driver != null) {
 			return driver;
 		}
 
@@ -1046,6 +1048,7 @@ public class Webcam {
 		LOG.info("{} capture driver will be used", driver.getClass().getSimpleName());
 
 		return driver;
+		}
 	}
 
 	/**
@@ -1090,9 +1093,9 @@ public class Webcam {
 		try {
 			driver = driverClass.newInstance();
 		} catch (InstantiationException e) {
-			throw new WebcamException(e);
+			throw new WebcamException("Error in the Instantiation of the driver class for the webcam");
 		} catch (IllegalAccessException e) {
-			throw new WebcamException(e);
+			throw new WebcamException("The application does not have access to the definition of the specified constructor");
 		}
 	}
 
@@ -1240,8 +1243,10 @@ public class Webcam {
 	 *
 	 * @return Discovery service or null if not yet created
 	 */
-	public static synchronized WebcamDiscoveryService getDiscoveryServiceRef() {
-		return discovery;
+	public static  WebcamDiscoveryService getDiscoveryServiceRef() {
+		synchronized (discovery) {
+			return discovery;
+		}
 	}
 
 	/**

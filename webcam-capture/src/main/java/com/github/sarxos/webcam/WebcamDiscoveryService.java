@@ -146,9 +146,9 @@ public class WebcamDiscoveryService implements Runnable {
 			}
 
 		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
+			throw new RuntimeException("Interruption of the thread");
 		} catch (ExecutionException e) {
-			throw new WebcamException(e);
+			throw new WebcamException("the result of the task can't be retrieve");
 		}
 	}
 
@@ -165,7 +165,7 @@ public class WebcamDiscoveryService implements Runnable {
 		try {
 			tmpold = getDevices(getWebcams(Long.MAX_VALUE, TimeUnit.MILLISECONDS));
 		} catch (TimeoutException e) {
-			throw new WebcamException(e);
+			throw new WebcamException("it's impossible to return the timeout value");
 		}
 
 		// convert to linked list due to O(1) on remove operation on
@@ -268,21 +268,24 @@ public class WebcamDiscoveryService implements Runnable {
 		// discovered
 
 		Object monitor = new Object();
-		do {
+		boolean interrupt = false;
 
-			synchronized (monitor) {
-				try {
-					monitor.wait(support.getScanInterval());
-				} catch (InterruptedException e) {
+		try {
+			do {
+				if (interrupt == true) {
 					break;
-				} catch (Exception e) {
-					throw new RuntimeException("Problem waiting on monitor", e);
 				}
-			}
-
-			scan();
-
-		} while (running.get());
+				synchronized (monitor) {
+					monitor.wait(support.getScanInterval()); 
+				}
+				scan();
+			} while (running.get());
+			
+		} catch (InterruptedException e) {
+			interrupt = true;
+		} catch (Exception e) {
+			throw new RuntimeException("Problem waiting on monitor");
+		}
 
 		LOG.debug("Webcam discovery service loop has been stopped");
 	}
@@ -297,23 +300,27 @@ public class WebcamDiscoveryService implements Runnable {
 
 	private static void notifyWebcamGone(Webcam webcam, WebcamDiscoveryListener[] listeners) {
 		WebcamDiscoveryEvent event = new WebcamDiscoveryEvent(webcam, WebcamDiscoveryEvent.REMOVED);
-		for (WebcamDiscoveryListener l : listeners) {
-			try {
+		Class<? extends WebcamDiscoveryListener> classe = null;
+		try {
+			for (WebcamDiscoveryListener l : listeners) {
 				l.webcamGone(event);
-			} catch (Exception e) {
-				LOG.error(String.format("Webcam gone, exception when calling listener %s", l.getClass()), e);
+				classe = l.getClass();
 			}
+		} catch (Exception e) {
+			LOG.error(String.format("Webcam gone, exception when calling listener %s", classe), e);
 		}
 	}
 
 	private static void notifyWebcamFound(Webcam webcam, WebcamDiscoveryListener[] listeners) {
 		WebcamDiscoveryEvent event = new WebcamDiscoveryEvent(webcam, WebcamDiscoveryEvent.ADDED);
-		for (WebcamDiscoveryListener l : listeners) {
-			try {
+		Class<? extends WebcamDiscoveryListener> classe = null;
+		try {
+			for (WebcamDiscoveryListener l : listeners) {
 				l.webcamFound(event);
-			} catch (Exception e) {
-				LOG.error(String.format("Webcam found, exception when calling listener %s", l.getClass()), e);
+				classe = l.getClass();
 			}
+		} catch (Exception e) {
+			LOG.error(String.format("Webcam found, exception when calling listener %s", classe), e);
 		}
 	}
 

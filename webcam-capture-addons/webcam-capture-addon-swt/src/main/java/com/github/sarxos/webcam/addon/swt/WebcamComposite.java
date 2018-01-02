@@ -99,8 +99,10 @@ public class WebcamComposite extends Composite implements WebcamListener, PaintL
 			@Override
 			public void run() {
 
-				if (!running.get()) {
-					return;
+				if(running!=null){
+					if (!running.get()) {
+						return;
+					}
 				}
 
 				Display.getDefault().syncExec(new Runnable() {
@@ -115,18 +117,20 @@ public class WebcamComposite extends Composite implements WebcamListener, PaintL
 					try {
 						Thread.sleep(50);
 					} catch (InterruptedException e) {
-						throw new RuntimeException(e);
+						throw new RuntimeException("The thread has been interrupted");
 					}
 				}
-
-				if (webcam.isOpen()) {
-					if (isFPSLimited()) {
-						executor.scheduleAtFixedRate(updater, 0, (long) (1000 / frequency), TimeUnit.MILLISECONDS);
+				
+				if(webcam != null && executor != null){
+					if (webcam.isOpen()) {
+						if (isFPSLimited()) {
+							executor.scheduleAtFixedRate(updater, 0, (long) (1000 / frequency), TimeUnit.MILLISECONDS);
+						} else {
+							executor.scheduleWithFixedDelay(updater, 100, 1, TimeUnit.MILLISECONDS);
+						}
 					} else {
-						executor.scheduleWithFixedDelay(updater, 100, 1, TimeUnit.MILLISECONDS);
+						executor.schedule(this, 500, TimeUnit.MILLISECONDS);
 					}
-				} else {
-					executor.schedule(this, 500, TimeUnit.MILLISECONDS);
 				}
 			}
 
@@ -146,19 +150,21 @@ public class WebcamComposite extends Composite implements WebcamListener, PaintL
 		}
 
 		public void stop() {
-			if (running.compareAndSet(true, false)) {
+			if (running.compareAndSet(true, false) && executor !=null) {
 				executor.shutdown();
 			}
 		}
 		
 		private final boolean CiclomaticComplexityReduced1(){
-			if (!running.get() || !webcam.isOpen() || paused) {
-				return true;
-			}else{
-				return false;
+			if(running != null || webcam != null){
+				if (!running.get() || !webcam.isOpen() || paused) {
+					return true;
+				}
 			}
-			
+			return false;
 		}
+			
+		
 		
 		private final void CiclomaticComplexityReduced2(ImageData data, WritableRaster raster, int[] rgb, PaletteData palette){
 			int x = 0;
@@ -181,7 +187,11 @@ public class WebcamComposite extends Composite implements WebcamListener, PaintL
 
 			BufferedImage bi = null;
 			try {
-				bi = webcam.getImage();
+				if(webcam != null){
+					bi = webcam.getImage();
+				} else {
+					return;
+				}
 			} catch (Throwable t) {
 				LOG.error("Exception when getting image", t);
 			}
@@ -189,29 +199,31 @@ public class WebcamComposite extends Composite implements WebcamListener, PaintL
 			if (bi == null) {
 				LOG.debug("Image is null, ignore");
 				return;
-			}
+			} else{
+				ComponentColorModel model = (ComponentColorModel) bi.getColorModel();
+				PaletteData palette = new PaletteData(0x0000FF, 0x00FF00, 0xFF0000);
+				ImageData data = new ImageData(bi.getWidth(), bi.getHeight(), model.getPixelSize(), palette);
 
-			ComponentColorModel model = (ComponentColorModel) bi.getColorModel();
-			PaletteData palette = new PaletteData(0x0000FF, 0x00FF00, 0xFF0000);
-			ImageData data = new ImageData(bi.getWidth(), bi.getHeight(), model.getPixelSize(), palette);
+				// this is valid because we are using a 3-byte data model without
+				// transparent pixels
+				data.transparentPixel = -1;
+				if(bi.getRaster() == null){
+					return;
+				}
+				WritableRaster raster = bi.getRaster();
 
-			// this is valid because we are using a 3-byte data model without
-			// transparent pixels
-			data.transparentPixel = -1;
+				int[] rgb = new int[3];
 
-			WritableRaster raster = bi.getRaster();
+				this.CiclomaticComplexityReduced2(data, raster, rgb, palette);
 
-			int[] rgb = new int[3];
+				Image previous = image;
 
-			this.CiclomaticComplexityReduced2(data, raster, rgb, palette);
-
-			Image previous = image;
-
-			try {
-				image = new Image(Display.getDefault(), data);
-			} finally {
-				if (previous != null) {
-					previous.dispose();
+				try {
+					image = new Image(Display.getDefault(), data);
+				} finally {
+					if (previous != null) {
+						previous.dispose();
+					}
 				}
 			}
 

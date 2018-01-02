@@ -109,37 +109,39 @@ public class GStreamerDevice implements WebcamDevice, RGBDataSink.Listener, Webc
 	/**
 	 * Initialize webcam device.
 	 */
-	private synchronized void init() {
-
-		if (!initialized.compareAndSet(false, true)) {
-			return;
+	private void init() {
+		synchronized (this) {
+	
+			if (!initialized.compareAndSet(false, true)) {
+				return;
+			}
+	
+			LOG.debug("GStreamer webcam device initialization");
+	
+			pipe = new Pipeline(getName());
+			source = ElementFactory.make(GStreamerDriver.getSourceBySystem(), "source");
+	
+			if (Platform.isWindows()) {
+				source.set("device-index", deviceIndex);
+			} else if (Platform.isLinux()) {
+				source.set("device", videoFile.getAbsolutePath());
+			} else if (Platform.isMacOSX()) {
+				throw new IllegalStateException("not yet implemented");
+			}
+	
+			sink = new RGBDataSink(getName(), this);
+			sink.setPassDirectBuffer(true);
+			sink.getSinkElement().setMaximumLateness(LATENESS, TimeUnit.MILLISECONDS);
+			sink.getSinkElement().setQOSEnabled(true);
+	
+			filter = ElementFactory.make("capsfilter", "capsfilter");
+	
+			jpegdec = ElementFactory.make("jpegdec", "jpegdec");
+	
+			pipelineReady();
+			resolutions = parseResolutions(source.getPads().get(0));
+			pipelineStop();
 		}
-
-		LOG.debug("GStreamer webcam device initialization");
-
-		pipe = new Pipeline(getName());
-		source = ElementFactory.make(GStreamerDriver.getSourceBySystem(), "source");
-
-		if (Platform.isWindows()) {
-			source.set("device-index", deviceIndex);
-		} else if (Platform.isLinux()) {
-			source.set("device", videoFile.getAbsolutePath());
-		} else if (Platform.isMacOSX()) {
-			throw new IllegalStateException("not yet implemented");
-		}
-
-		sink = new RGBDataSink(getName(), this);
-		sink.setPassDirectBuffer(true);
-		sink.getSinkElement().setMaximumLateness(LATENESS, TimeUnit.MILLISECONDS);
-		sink.getSinkElement().setQOSEnabled(true);
-
-		filter = ElementFactory.make("capsfilter", "capsfilter");
-
-		jpegdec = ElementFactory.make("jpegdec", "jpegdec");
-
-		pipelineReady();
-		resolutions = parseResolutions(source.getPads().get(0));
-		pipelineStop();
 	}
 
 	/**
@@ -279,20 +281,22 @@ public class GStreamerDevice implements WebcamDevice, RGBDataSink.Listener, Webc
 		}
 
 		caps = Caps.fromString(String.format("%s,framerate=30/1,width=%d,height=%d", format, size.width, size.height));
-		filter.setCaps(caps);
+		if(filter != null){
+			filter.setCaps(caps);
 
-		LOG.debug("Using filter caps: {}", caps);
+			LOG.debug("Using filter caps: {}", caps);
 
-		pipelinePlay();
+			pipelinePlay();
 
-		LOG.debug("Wait for device to be ready");
+			LOG.debug("Wait for device to be ready");
 
-		// wait max 20s for image to appear
-		synchronized (this) {
-			try {
-				this.wait(20000);
-			} catch (InterruptedException e) {
-				return;
+			// wait max 20s for image to appear
+			synchronized (this) {
+				try {
+					this.wait(20000);
+				} catch (InterruptedException e) {
+					return;
+				}
 			}
 		}
 	}
@@ -313,33 +317,45 @@ public class GStreamerDevice implements WebcamDevice, RGBDataSink.Listener, Webc
 	}
 
 	private void pipelineElementsLink() {
-		final Element[] elements = pipelineElementsPrepare();
-		pipe.addMany(elements);
-		if (!Element.linkMany(elements)) {
-			LOG.warn("Some elements were not successfully linked!");
+		if(pipe != null){
+			final Element[] elements = pipelineElementsPrepare();
+			pipe.addMany(elements);
+			if (!Element.linkMany(elements)) {
+				LOG.warn("Some elements were not successfully linked!");
+			}
 		}
 	}
 
 	private void pipelineElementsUnlink() {
 		final Element[] elements = pipelineElementsPrepare();
 		Element.unlinkMany(elements);
-		pipe.removeMany(elements);
+		if(pipe!=null){
+			pipe.removeMany(elements);
+		}
 	}
 
 	private void pipelineReady() {
 		pipelineElementsLink();
-		pipe.setState(State.READY);
+		if(pipe!=null){
+			pipe.setState(State.READY);
+		}
+		
 	}
 
 	private void pipelinePlay() {
-		pipelineElementsReset();
-		pipelineElementsLink();
-		pipe.setState(State.PLAYING);
+		if(pipe!=null){
+			pipelineElementsReset();
+			pipelineElementsLink();
+			pipe.setState(State.PLAYING);
+		}
 	}
 
 	private void pipelineStop() {
-		pipe.setState(State.NULL);
-		pipelineElementsUnlink();
+		if(pipe!=null){
+			pipe.setState(State.NULL);
+			pipelineElementsUnlink();
+		}
+		
 	}
 
 	@Override
@@ -366,13 +382,14 @@ public class GStreamerDevice implements WebcamDevice, RGBDataSink.Listener, Webc
 		LOG.debug("Disposing GStreamer device");
 
 		close();
-
-		source.dispose();
-		filter.dispose();
-		jpegdec.dispose();
-		caps.dispose();
-		sink.dispose();
-		pipe.dispose();
+		if(source != null && filter != null && jpegdec != null && sink != null && pipe != null){
+			source.dispose();
+			filter.dispose();
+			jpegdec.dispose();
+			caps.dispose();
+			sink.dispose();
+			pipe.dispose();
+		}
 	}
 
 	@Override
