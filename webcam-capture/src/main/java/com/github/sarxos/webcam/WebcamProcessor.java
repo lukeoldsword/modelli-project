@@ -75,26 +75,28 @@ public class WebcamProcessor {
 
 		@Override
 		public void run() {
-			while (true) {
-				WebcamTask t = null;
-				try {
+
+			WebcamTask t = null;
+
+			try {
+				while (true) {
 					(t = inbound.take()).handle();
+				}
+			} catch (InterruptedException e) {
+				System.out.println("The thread has been interrupted");
+			} catch (Throwable e) {
+				if (t != null) {
+					t.setThrowable(e);
+				}
+			} finally {
+				try {
+					if (t != null) {
+						outbound.put(t);
+					}
 				} catch (InterruptedException e) {
-					break;
-				} catch (Throwable e) {
-					if (t != null) {
-						t.setThrowable(e);
-					}
-				} finally {
-					if (t != null) {
-						try {
-							outbound.put(t);
-						} catch (InterruptedException e) {
-							break;
-						} catch (Exception e) {
-							throw new RuntimeException("Cannot put task into outbound queue");
-						}
-					}
+					System.out.println("The thread has been interrupted");
+				} catch (Exception e) {
+					throw new RuntimeException("Cannot put task into outbound queue");
 				}
 			}
 		}
@@ -152,21 +154,20 @@ public class WebcamProcessor {
 
 			LOG.debug("Awaiting tasks termination");
 
-			while (runner.isTerminated()) {
-
-				try {
+			try {
+				while (runner.isTerminated()) {
 					runner.awaitTermination(100, TimeUnit.MILLISECONDS);
-				} catch (InterruptedException e) {
-					return;
 				}
-
-				runner.shutdownNow();
+			} catch (InterruptedException e) {
+				return;
 			}
 
-			LOG.debug("All tasks has been terminated");
+			runner.shutdownNow();
 		}
 
+		LOG.debug("All tasks has been terminated");
 	}
+
 
 	public static  WebcamProcessor getInstance() {
 		synchronized (INSTANCE) {
