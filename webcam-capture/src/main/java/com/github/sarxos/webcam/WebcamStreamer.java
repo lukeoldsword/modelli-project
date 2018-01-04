@@ -82,14 +82,12 @@ public class WebcamStreamer implements ThreadFactory, WebcamListener {
 
 			// stream
 			try {
-
 				socket.setSoTimeout(0);
 				socket.setKeepAlive(false);
 				socket.setTcpNoDelay(true);
 				
 				StringBuilder sb = new StringBuilder();
 				while (isInitialized()) {
-
 					
 					sb.append("HTTP/1.0 200 OK").append(CRLF);
 					sb.append("Connection: close").append(CRLF);
@@ -207,10 +205,14 @@ public class WebcamStreamer implements ThreadFactory, WebcamListener {
 			}
 		}
 		
+		private boolean isReady(BufferedReader br){
+			return br.ready();
+		}
+		
 		// consume whole input
 		private void ConsumeWholeInput(BufferedReader br){
 			try {
-				while (br.ready()) {
+				while (isReady(br)) {
 					br.readLine();
 				}
 			} catch (IOException e) {
