@@ -1,4 +1,4 @@
-package com.github.sarxos.webcam.ds.gst1;
+	package com.github.sarxos.webcam.ds.gst1;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +22,9 @@ import com.github.sarxos.webcam.ds.gst1.impl.GsUtils;
 import com.github.sarxos.webcam.util.NixVideoDevUtils;
 import com.sun.jna.Platform;
 
-
+/**
+ * Gst1Driver
+ */
 public class Gst1Driver implements WebcamDriver {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Gst1Driver.class);
@@ -103,7 +105,9 @@ public class Gst1Driver implements WebcamDriver {
 	}
 
 	public static void main(String[] args) throws IOException {
-		for (WebcamDevice d : new Gst1Driver().getDevices()) {
+		List<WebcamDevice> device = new Gst1Driver().getDevices();
+		
+		for (WebcamDevice d : device) {
 			System.out.println(d);
 			d.getResolutions();
 			d.open();

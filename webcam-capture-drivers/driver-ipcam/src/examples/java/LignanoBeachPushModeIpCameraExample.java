@@ -22,6 +22,9 @@ import com.github.sarxos.webcam.ds.ipcam.IpCamDeviceRegistry;
 import com.github.sarxos.webcam.ds.ipcam.IpCamDriver;
 import com.github.sarxos.webcam.ds.ipcam.IpCamMode;
 
+/**
+ * LignanoBeachPushModeIpCameraExample
+ */
 @SuppressWarnings("serial")
 public class LignanoBeachPushModeIpCameraExample extends JFrame {
 
@@ -36,7 +39,8 @@ public class LignanoBeachPushModeIpCameraExample extends JFrame {
 
 	static {
 		try {
-			IpCamDeviceRegistry.register("Lignano Beach IP Camera", "http://195.31.81.138/mjpg/video.mjpg", IpCamMode.PUSH);
+			String ip = "http://195.31.81.138/mjpg/video.mjpg";
+			IpCamDeviceRegistry.register("Lignano Beach IP Camera", ip, IpCamMode.PUSH);
 		} catch (MalformedURLException e) {
 			throw new IllegalStateException("detected a malformed URL");
 		}
@@ -54,9 +58,10 @@ public class LignanoBeachPushModeIpCameraExample extends JFrame {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			try {
+				File file = new File(String.format("test-%d.jpg", 0));
 				for (int i = 0; i < webcams.size(); i++) {
 					Webcam webcam = webcams.get(i);
-					File file = new File(String.format("test-%d.jpg", i));
+					file = new File(String.format("test-%d.jpg", i));
 					ImageIO.write(webcam.getImage(), "JPG", file);
 					System.out.format("Image for %s saved in %s \n", webcam.getName(), file);
 				}

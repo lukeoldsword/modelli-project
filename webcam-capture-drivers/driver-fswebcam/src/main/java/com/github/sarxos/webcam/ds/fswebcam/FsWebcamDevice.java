@@ -31,14 +31,38 @@ import com.github.sarxos.webcam.WebcamDevice.Configurable;
 import com.github.sarxos.webcam.WebcamExceptionHandler;
 import com.github.sarxos.webcam.WebcamResolution;
 
-
+/**
+ *FsWebcamDevice
+ */
 public class FsWebcamDevice implements WebcamDevice, Configurable {
-
+	/**
+	 * {@link #PARAM_KEY_COMPRESSION} String
+	 */
 	public static final String PARAM_KEY_COMPRESSION = "compression";
+	
+	/**
+	 * {@link #PARAM_KEY_COMPRESSION} String
+	 */
 	public static final String PARAM_KEY_FORMAT = "format";
+	
+	/**
+	 * {@link #PARAM_KEY_SKIP} String
+	 */
 	public static final String PARAM_KEY_SKIP = "skip";
+	
+	/**
+	 * {@link #PARAM_KEY_FRAMES} String
+	 */
 	public static final String PARAM_KEY_FRAMES = "frames";
+	
+	/**
+	 * {@link #PARAM_KEY_LOG} String
+	 */
 	public static final String PARAM_KEY_LOG = "log";
+	
+	/**
+	 * {@link #PARAM_KEY_VERBOSE} String
+	 */
 	public static final String PARAM_KEY_VERBOSE = "verbose";
 
 	protected static final class ExecutorThreadFactory implements ThreadFactory {
@@ -246,11 +270,7 @@ public class FsWebcamDevice implements WebcamDevice, Configurable {
 				process.destroy();
 				throw new RuntimeException("failed or interrupted I/O operation");
 			} finally {
-				try {
-					bais.close();
-				} catch (IOException e) {
-					throw new RuntimeException("failed or interrupted I/O operation");
-				}
+				bais.close();
 			}
 
 			process.waitFor();

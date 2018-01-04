@@ -21,7 +21,9 @@ import org.slf4j.LoggerFactory;
 
 import com.github.sarxos.webcam.WebcamDevice;
 
-
+/**
+ *FFmpegCliDevice
+ */
 public class FFmpegCliDevice implements WebcamDevice, WebcamDevice.BufferAccess {
 
 	private static final Logger LOG = LoggerFactory.getLogger(FFmpegCliDevice.class);
@@ -156,7 +158,7 @@ public class FFmpegCliDevice implements WebcamDevice, WebcamDevice.BufferAccess 
 	}
 
 	@Override
-	public BufferedImage getImage() {
+	public BufferedImage getImage() throws IOException {
 
 		if (!open.get()) {
 			return null;
@@ -168,11 +170,7 @@ public class FFmpegCliDevice implements WebcamDevice, WebcamDevice.BufferAccess 
 		} catch (IOException e) {
 			throw new RuntimeException("failed or interrupted I/O operations");
 		} finally {
-			try {
 				bais.close();
-			} catch (IOException e) {
-				throw new RuntimeException("failed or interrupted I/O operations");
-			}
 		}
 	}
 
