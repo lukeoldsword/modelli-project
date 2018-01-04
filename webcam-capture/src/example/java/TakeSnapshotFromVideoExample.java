@@ -17,7 +17,9 @@ import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamPanel;
 import com.github.sarxos.webcam.WebcamResolution;
 
-
+/**
+ * TakeSnapshotFromVideoExample
+ */
 @SuppressWarnings("serial")
 public class TakeSnapshotFromVideoExample extends JFrame {
 
@@ -29,10 +31,9 @@ public class TakeSnapshotFromVideoExample extends JFrame {
 
 		@Override
 		public void actionPerformed(ActionEvent e) {
-			try {
+			try {File file = new File(String.format("test-%d.jpg", 0));
 				for (int i = 0; i < webcams.size(); i++) {
 					Webcam webcam = webcams.get(i);
-					File file = new File(String.format("test-%d.jpg", i));
 					ImageIO.write(webcam.getImage(), "JPG", file);
 					System.out.format("Image for %s saved in %s \n", webcam.getName(), file);
 				}

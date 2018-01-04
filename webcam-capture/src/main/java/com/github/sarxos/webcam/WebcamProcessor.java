@@ -12,7 +12,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * WebcamProcessor
+ */
 public class WebcamProcessor {
 
 	private static final Logger LOG = LoggerFactory.getLogger(WebcamProcessor.class);
@@ -88,17 +90,7 @@ public class WebcamProcessor {
 				if (t != null) {
 					t.setThrowable(e);
 				}
-			} finally {
-				try {
-					if (t != null) {
-						outbound.put(t);
-					}
-				} catch (InterruptedException e) {
-					System.out.println("The thread has been interrupted");
-				} catch (Exception e) {
-					throw new RuntimeException("Cannot put task into outbound queue");
-				}
-			}
+			} 
 		}
 	}
 
