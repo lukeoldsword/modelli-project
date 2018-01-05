@@ -102,12 +102,9 @@ public class WebcamComposite extends Composite implements WebcamListener, PaintL
 						while (starting) {
 							Thread.sleep(50);
 						} 
-					} catch (InterruptedException e) {
-						try{
-							throw new RuntimeException("The thread has been interrupted");
-						}catch (RuntimeException e1){
-							System.exit(0);
-						}
+					} catch (InterruptedException e){
+						System.err.println("The thread has been interrupted");
+						System.exit(0);
 					}
 				
 
