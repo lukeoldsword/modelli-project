@@ -185,10 +185,11 @@ public class JHBlurFilter extends JHFilter {
 				int r3 = (rgb3 >> 16) & 0xff;
 				int g3 = (rgb3 >> 8) & 0xff;
 				int b3 = rgb3 & 0xff;
-				a1 = a2 + (int) ((a1 + a3) * radius);
-				r1 = r2 + (int) ((r1 + r3) * radius);
-				g1 = g2 + (int) ((g1 + g3) * radius);
-				b1 = b2 + (int) ((b1 + b3) * radius);
+		
+				a1 = a2 + sumAndRadius(a1, a3,radius);
+				r1 = r2 + sumAndRadius(r1, r3,radius);
+				g1 = g2 + sumAndRadius(g1, g3,radius);
+				b1 = b2 + sumAndRadius(b1, b3,radius);
 				a1 *= f;
 				r1 *= f;
 				g1 *= f;
@@ -201,6 +202,9 @@ public class JHBlurFilter extends JHFilter {
 		}
 	}
 
+	private static int sumAndRadius(int num1, int num2, float radius){
+		return  ((num1 + num2) * (int)radius);
+	}
 	/**
 	 * Set the horizontal size of the blur. Minimum hRadius value is 0.
 	 *
