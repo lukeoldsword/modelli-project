@@ -856,7 +856,8 @@ public class Webcam {
 		try {
 			return getWebcams(Long.MAX_VALUE);
 		} catch (TimeoutException e) {
-			throw new RuntimeException("No webcam detected");
+			System.err.println("No webcam detected");
+			System.exit(0);
 		}
 	}
 
@@ -926,7 +927,8 @@ public class Webcam {
 		} catch (TimeoutException e) {
 			// this should never happen since user would have to wait 300000000
 			// years for it to occur
-			throw new RuntimeException("No default webcam");
+			System.err.println("No default webcam");
+			System.exit(0);
 		}
 	}
 
