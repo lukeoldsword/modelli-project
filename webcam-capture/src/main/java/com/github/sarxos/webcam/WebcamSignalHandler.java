@@ -3,8 +3,8 @@ package com.github.sarxos.webcam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
+import com.github.sarxos.webcam.util.sunCustomized.Signal;
+import com.github.sarxos.webcam.util.sunCustomized.SignalHandler;
 
 
 /**
