@@ -35,7 +35,7 @@ public class WebcamStreamer implements ThreadFactory, WebcamListener {
 
 	private static final String BOUNDARY = "mjpegframe";
 
-	private static final String CRLF = "\r\n";
+	private static final String CRLF = System.getProperty("line.separator");
 
 	private class Acceptor implements Runnable {
 
