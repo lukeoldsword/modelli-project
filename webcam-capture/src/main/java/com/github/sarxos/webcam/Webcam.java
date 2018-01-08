@@ -638,9 +638,8 @@ public class Webcam {
 	 * @return List of webcams existing in the ssytem
 	 * @throws TimeoutException when timeout occurs
 	 * @throws WebcamException when something is wrong
-	 * @throws IllegalArgumentException when timeout is negative
 	 * @see Webcam#getWebcams(long, TimeUnit)
-	 */
+	 *///@throws IllegalArgumentException when timeout is negative
 	public static List<Webcam> getWebcams(long timeout) throws TimeoutException, WebcamException {
 		if (timeout < 0) {
 			throw new IllegalArgumentException(String.format("Timeout cannot be negative (%d)", timeout));
@@ -654,8 +653,7 @@ public class Webcam {
 	 * @return List of webcams
 	 * @throws TimeoutException when timeout has been exceeded
 	 * @throws WebcamException when something is wrong
-	 * @throws IllegalArgumentException when timeout is negative or tunit null
-	 */
+	 *///@throws IllegalArgumentException when timeout is negative or tunit null
 	public static  List<Webcam> getWebcams(long timeout, TimeUnit tunit) throws TimeoutException, WebcamException {
 		synchronized (getDiscoveryService()) {
 			if (timeout < 0) {
@@ -695,9 +693,8 @@ public class Webcam {
 	 * @return Default webcam (first from the list)
 	 * @throws TimeoutException when discovery timeout has been exceeded
 	 * @throws WebcamException if something is really wrong
-	 * @throws IllegalArgumentException when timeout is negative
 	 * @see Webcam#getWebcams(long)
-	 */
+	 *///@throws IllegalArgumentException when timeout is negative
 	public static Webcam getDefault(long timeout) throws TimeoutException, WebcamException {
 		if (timeout < 0) {
 			throw new IllegalArgumentException(String.format("Timeout cannot be negative (%d)", timeout));
@@ -711,9 +708,8 @@ public class Webcam {
 	 * @return Default webcam (first from the list)
 	 * @throws TimeoutException when discovery timeout has been exceeded
 	 * @throws WebcamException if something is really wrong
-	 * @throws IllegalArgumentException when timeout is negative or tunit null
 	 * @see Webcam#getWebcams(long, TimeUnit)
-	 */
+	 *///@throws IllegalArgumentException when timeout is negative or tunit null
 	public static Webcam getDefault(long timeout, TimeUnit tunit) throws TimeoutException, WebcamException {
 		if (timeout < 0) {
 			throw new IllegalArgumentException(String.format("Timeout cannot be negative (%d)", timeout));
