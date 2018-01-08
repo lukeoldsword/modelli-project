@@ -155,9 +155,9 @@ public class GStreamerDevice implements WebcamDevice, RGBDataSink.Listener, Webc
 	 */
 	private Dimension[] parseResolutions(Pad pad) {
 
-		Caps caps = pad.getCaps();
+		Caps ObjectCaps = pad.getCaps();
 
-		format = findPreferredFormat(caps);
+		format = findPreferredFormat(ObjectCaps);
 
 		LOG.debug("Best format is {}", format);
 
@@ -165,14 +165,14 @@ public class GStreamerDevice implements WebcamDevice, RGBDataSink.Listener, Webc
 		Structure s = null;
 		String mime = null;
 
-		final int n = caps.size();
+		final int n = ObjectCaps.size();
 		int i = 0;
 
 		Map<String, Dimension> map = new HashMap<String, Dimension>();
 
 		do {
 
-			s = caps.getStructure(i++);
+			s = ObjectCaps.getStructure(i++);
 
 			LOG.debug("Found format structure {}", s);
 
@@ -186,15 +186,15 @@ public class GStreamerDevice implements WebcamDevice, RGBDataSink.Listener, Webc
 
 		} while (i < n);
 
-		final Dimension[] resolutions = new ArrayList<Dimension>(map.values()).toArray(new Dimension[0]);
+		final Dimension[] ConstResolutions = new ArrayList<Dimension>(map.values()).toArray(new Dimension[0]);
 
 		if (LOG.isDebugEnabled()) {
-			for (Dimension d : resolutions) {
+			for (Dimension d : ConstResolutions) {
 				LOG.debug("Resolution detected {} with format {}", d, format);
 			}
 		}
 
-		return resolutions;
+		return ConstResolutions;
 	}
 
 	private String findPreferredFormat(Caps parameterCaps) {
@@ -323,19 +323,19 @@ public class GStreamerDevice implements WebcamDevice, RGBDataSink.Listener, Webc
 
 	private void pipelineElementsLink() {
 		if(pipe != null){
-			final Element[] elements = pipelineElementsPrepare();
-			pipe.addMany(elements);
-			if (!Element.linkMany(elements)) {
+			final Element[] ConstElements = pipelineElementsPrepare();
+			pipe.addMany(ConstElements);
+			if (!Element.linkMany(ConstElements)) {
 				LOG.warn("Some elements were not successfully linked!");
 			}
 		}
 	}
 
 	private void pipelineElementsUnlink() {
-		final Element[] elements = pipelineElementsPrepare();
-		Element.unlinkMany(elements);
+		final Element[] ConstElements = pipelineElementsPrepare();
+		Element.unlinkMany(ConstElements);
 		if(pipe!=null){
-			pipe.removeMany(elements);
+			pipe.removeMany(ConstElements);
 		}
 	}
 
@@ -403,7 +403,7 @@ public class GStreamerDevice implements WebcamDevice, RGBDataSink.Listener, Webc
 	}
 
 	@Override
-	public void rgbFrame(boolean preroll, int width, int height, IntBuffer rgb) {
+	public void rgbFrame (boolean preroll, int width, int height, IntBuffer rgb) {
 
 		LOG.trace("New RGB frame");
 
